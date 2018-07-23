@@ -23,10 +23,17 @@ function displayProducts() {
     // Run the query
     connection.query(thisQuery, function (error, results) {
         console.log("Available products:");
-        // Loop through the results of the query and display info with a sweet arrow function
-        results.forEach(result => {
-            console.log("Item ID:", result.item_id, "| Product", result.product_name, "| Dept:", result.department_name, "| $", result.price, "|", result.stock_quantity, "in stock");
-        });
+        // filter results to only show product in stock, then display it with a map method
+        results
+            .filter(result => result.stock_quantity > 0)
+            .map(result => {
+                console.log(
+                    "Item ID:" + result.item_id + 
+                    " | Product" + result.product_name + 
+                    " | Dept:" + result.department_name + 
+                    " | $" + result.price + 
+                    " |" + result.stock_quantity, "in stock");
+            });
     });
     // Prompt the user for a purchase
     promptPurchase();
