@@ -1,5 +1,8 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
+
+const separator = "\n===============\n";
+
 // Specify database connection
 const connection = mysql.createConnection({
     host: "localhost",
@@ -19,21 +22,22 @@ connection.connect(function (err) {
 // Function that displays all items for sale and their details, then prompts for purchase
 function displayProducts() {
     // Hold the query as a string for easy changing later
-    let thisQuery = "SELECT * FROM products";
+    let thisQuery = "SELECT * FROM products WHERE stock_quantity > 0";
     // Run the query
     connection.query(thisQuery, function (error, results) {
         console.log("Available products:");
         // filter results to only show product in stock, then display it with a map method
         results
-            .filter(result => result.stock_quantity > 0)
+            // .filter(result => result.stock_quantity > 0)
             .map(result => {
                 console.log(
-                    "Item ID:" + result.item_id + 
-                    " | Product" + result.product_name + 
-                    " | Dept:" + result.department_name + 
-                    " | $" + result.price + 
-                    " |" + result.stock_quantity, "in stock");
+                    "Item ID: " + result.item_id +
+                    " | Product: " + result.product_name +
+                    " | Dept: " + result.department_name +
+                    " | $" + result.price +
+                    " | " + result.stock_quantity + " in stock");
             });
+        console.log("\n");
     });
     // Prompt the user for a purchase
     promptPurchase();
@@ -47,10 +51,11 @@ function promptPurchase() {
     connection.query(thisQuery, function (error, results) {
         // Prompt the user for the product ID and quantity
         inquirer.prompt([
+            // TODO: Make the user select from a list. Input validation is for losers.
             {
                 type: "input",
                 name: "productID",
-                message: "Enter the product ID for what you'd like to buy."
+                message: "Enter the product ID for what you'd like to buy:"
             },
             {
                 type: "input",
@@ -67,15 +72,17 @@ function promptPurchase() {
                         thisIndex = i;
                     }
                 };
-                // !: The console log below can throw an error because the product ID hasn't been validated yet
-                // console.log("Did you say " + answers.productID + "? You wanted " + results[thisIndex].product_name + "?");
-                // TODO: Test this. If the user entered an invalid product ID
-                if (thisIndex == undefined) {
-                    console.log("We're sorry, you specified an invalid product ID.");
+                // If the user entered an invalid product ID
+                if (thisIndex == "" || answers.productQuantity < 1) {
+                    console.log("We're sorry, you entered an invalid product ID or quantity.\n");
+                    // Ask the user if they want to buy anything else
+                    buySomethingElse();
                 }
                 // Else if the user enter a higher quantity than what's available
                 else if (answers.productQuantity > results[thisIndex].stock_quantity) {
-                    console.log("We're sorry, we are short " + (answers.productQuantity - results[thisIndex].stock_quantity) + " unit(s) to fulfill your purchase.");
+                    console.log("We're sorry, we are short " + (answers.productQuantity - results[thisIndex].stock_quantity) + " unit(s) to fulfill your purchase.\n");
+                    // Ask the user if they want to buy anything else
+                    buySomethingElse();
                 }
                 // Else display confirmation message with total cost
                 else {
@@ -89,11 +96,30 @@ function promptPurchase() {
                     updateParams = [newQuantity, results[thisIndex].item_id]
                     // We're not doing anything with the results of the SQL query, so the anonymous function only gets one arg.
                     connection.query(updateQuery, [newQuantity, answers.productID], function (error) {
-                        console.log("Great! Your purchase comes out to $" + totalPrice);
+                        console.log("Great! Your purchase comes out to $" + totalPrice + ".\n");
+                        // Ask the user if they want to buy anything else
+                        buySomethingElse();
                     });
                 };
-                // Display products for another purchase.
-                displayProducts();
             });
     });
 };
+
+function buySomethingElse(){
+    inquirer.prompt(
+        {
+            type: "confirm",
+            name: "confirm",
+            message: "Would you like to buy something else?"
+        }
+    )
+    .then( answer => {
+        if(answer.confirm){
+            displayProducts();
+        }
+        else{
+            console.log("Thanks for shopping!");
+            connection.end();
+        }
+    })
+}
