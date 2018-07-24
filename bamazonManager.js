@@ -9,8 +9,7 @@
 //   * If a manager selects `Add New Product`, it should allow the manager to add a completely new product to the store.
 
 const inquirer = require("inquirer");
-// Commenting out for now b/c this computer doesn't have mySQL set up yet
-/* const connection = require("mysql");
+const mysql = require("mysql");
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -25,9 +24,7 @@ const connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     displayManagerMenu();
-}); */
-
-displayManagerMenu();
+});
 
 // Function that displays manager menu and calls manager functions
 function displayManagerMenu(){
@@ -53,10 +50,12 @@ function displayManagerMenu(){
         // Switch statement to call other functions (eventually) based on user input
         switch(answer.mgrChoice){
             case "viewProducts":
-                console.log("View all products");
+                console.log("View all products\n");
+                viewProducts();
                 break;
             case "viewLow":
                 console.log("View low inventory");
+                viewLowInventory();
                 break;
             case "addInventory":
                 console.log("Add to inventory");
@@ -66,5 +65,53 @@ function displayManagerMenu(){
                 break;
             // no default since the user shouldn't be able to select anything besides the four options
         };
+    });
+};
+
+function viewProducts(){
+    let thisQuery = "SELECT product_name, department_name, price, stock_quantity FROM products";
+    connection.query(thisQuery, function(error, results){
+        if (error) throw error;
+        results.map( result => {
+            if (result.stock_quantity < 6) {
+                result.stock_quantity += " (LOW INVENTORY)";
+            };
+
+            console.log("Product: " + result.product_name +
+                        " | Department: " + result.department_name + 
+                        " | Price: $" + result.price +
+                        " | Quantity: " + result.stock_quantity);
+        });
+        manageSomethingElse();
+    });
+};
+
+function manageSomethingElse(){
+    inquirer.prompt({
+        type: "confirm",
+        name: "confirm",
+        message: "Look up different info?" 
+    }).then(answer => {
+        if(answer.confirm) {
+            displayManagerMenu();
+        }
+        else {
+            console.log("Good luck with the manager thing!");
+            connection.end();
+        };
+    });
+};
+
+function viewLowInventory(){
+    let thisQuery = "select product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
+    connection.query(thisQuery, function(error, results){
+        if (error) throw error;
+        results.map( result => {
+            console.log("Product: " + result.product_name +
+                        " | Department: " + result.department_name + 
+                        " | Price: $" + result.price +
+                        " | Quantity: " + result.stock_quantity);
+        });
+        manageSomethingElse();
     });
 };
