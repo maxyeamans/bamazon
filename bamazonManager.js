@@ -59,6 +59,7 @@ function displayManagerMenu(){
                 break;
             case "addInventory":
                 console.log("Add to inventory");
+                addInventory();
                 break;
             case "addNew":
                 console.log("Add new product");
@@ -113,5 +114,27 @@ function viewLowInventory(){
                         " | Quantity: " + result.stock_quantity);
         });
         manageSomethingElse();
+    });
+};
+
+function addInventory(){
+    let thisQuery = "select product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
+    connection.query(thisQuery, function(error, results){
+        if(error) throw error;
+        // Prompt for which low inventory item to add
+        let lowItems = results.map( result =>{
+            return (result.product_name + ", Quantity: " + result.stock_quantity + " unit(s)");
+        });
+        inquirer.prompt(
+            {
+                type: "list",
+                name: "inventoryAdd",
+                message: "Which low-inventory item would you like to re-order?",
+                choices: lowItems
+            }
+        ).then(answer => {
+            console.log(answer);
+            displayManagerMenu();
+        });
     });
 };
