@@ -74,29 +74,34 @@ function displayManagerMenu() {
     });
 };
 
+// Display all of the available products for purchase
 function viewProducts() {
     let thisQuery = "SELECT product_name, department_name, price, stock_quantity FROM products";
-    connection.query(thisQuery, function (error, results) {
+    connection.query(thisQuery, (error, results) => {
         if (error) throw error;
+        // Iterate through results with map
         results.map(result => {
+            // Appends (LOW INVENTORY) to any low inventory items
             if (result.stock_quantity < 6) {
                 result.stock_quantity += " (LOW INVENTORY)";
             };
-
+            // Print the results to the console
             console.log("Product: " + result.product_name +
                 " | Department: " + result.department_name +
                 " | Price: $" + result.price +
                 " | Quantity: " + result.stock_quantity);
         });
+        // Ask the user if they want to go back to the Manager Menu
         manageSomethingElse();
     });
 };
 
+// Quit out of the app if the user says they're all done
 function manageSomethingElse() {
     inquirer.prompt({
         type: "confirm",
         name: "confirm",
-        message: "Look up different info?"
+        message: "Go back to the Manager menu?"
     }).then(answer => {
         if (answer.confirm) {
             displayManagerMenu();
@@ -108,10 +113,13 @@ function manageSomethingElse() {
     });
 };
 
+// Displays all products with less than 6 units in stock
 function viewLowInventory() {
     let thisQuery = "select product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
     connection.query(thisQuery, function (error, results) {
         if (error) throw error;
+        // Iterate over results and print to console
+        // ! Would it be better practice to do a forEach on this, since I'm not returning anything from the map function?
         results.map(result => {
             console.log("Product: " + result.product_name +
                 " | Department: " + result.department_name +
@@ -122,22 +130,24 @@ function viewLowInventory() {
     });
 };
 
+// Allows the user to view low inventory items and add more
 function addInventory() {
     let thisQuery = "select item_id, product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
     connection.query(thisQuery, (error, results) => {
         if (error) throw error;
 
+        // Quits out of this function if there's no low inventory items.
         else if (results.length === 0) {
             console.log("No low inventory. What's wrong with your sales?\n");
             displayManagerMenu();
         }
 
         else {
-            // Prompt for which low inventory item to add
-            // Set this to return an object where
-            // name: string concatenating product name and units
-            // value: product id
-            // short: the product name
+            // Map over the results and return an array of objects that will be used as Inquirer prompt choices
+            /* Set this to return an object where
+                name: string concatenating product name and units
+                value: product id
+                short: the product name */
             let lowItems = results.map(result => {
                 return {
                     name: result.product_name + ", Quantity: " + result.stock_quantity + " unit(s)",
@@ -145,7 +155,6 @@ function addInventory() {
                     short: result.product_name
                 };
             });
-            // console.log(lowItems);
             inquirer.prompt([
                 {
                     type: "list",
@@ -168,6 +177,7 @@ function addInventory() {
                     }
                 }]
             ).then(answer => {
+                // Variable to store the index of the query result that matches the chosen product to restock
                 let index;
                 for (let i = 0; i < results.length; i++) {
                     if (results[i].item_id === answer.itemID) {
@@ -179,7 +189,7 @@ function addInventory() {
                 let updatedQuantity = parseInt(answer.quantityToAdd) + results[index].stock_quantity;
                 let itemIDtoRestock = results[index].item_id;
                 console.log("You said you want to order " + answer.quantityToAdd + " units of " + results[index].product_name + ".");
-
+                // Update the database with the user-specified number of units
                 connection.query("UPDATE products SET stock_quantity = ? WHERE item_id = ?", [updatedQuantity, itemIDtoRestock], function (error) {
                     console.log("There should now be " + updatedQuantity + " units of " + results[index].product_name + " in inventory.");
                     displayManagerMenu();
