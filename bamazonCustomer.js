@@ -52,6 +52,7 @@ function promptPurchase() {
         // Prompt the user for the product ID and quantity
         inquirer.prompt([
             // TODO: Make the user select from a list. Input validation is for losers.
+            // TODO: ORRRRRR map an array of item_id from results and validate on that in the question prompt
             {
                 type: "input",
                 name: "productID",
