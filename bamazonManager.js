@@ -64,6 +64,7 @@ function displayManagerMenu() {
                 break;
             case "addNew":
                 console.log("Add new product");
+                AddProduct();
                 break;
             case "endConnection":
                 connection.end();
@@ -200,9 +201,70 @@ function addInventory() {
 };
 
 function AddProduct() {
-    let thisQuery = "";
-    connection.query(thisQuery, (error, results) => {
-        if (error) throw error;
-        // Code for adding an item goes below.
+    inquirer.prompt([
+        // Ask for the new product name
+        {
+            type: "input",
+            name: "name",
+            message: "What's the name of the new product?",
+            // Check to make sure the user entered a valid number
+            validate: function (input) {
+                if (input !== "") {
+                    return true;
+                }
+                console.log("\nPlease enter a valid product name.");
+                return false;
+            }
+        },
+        // Ask for the new product department
+        {
+            type: "input",
+            name: "department",
+            message: "Which department does this product belong in?",
+            // Check to make sure the user entered a valid department name
+            validate: function (input) {
+                if (input !== "") {
+                    return true;
+                }
+                console.log("\nPlease enter a valid department name.");
+            }
+        },
+        {
+            type: "input",
+            name: "price",
+            message: "What is the sell price of this item?",
+            // Check to make sure the user entered a valid price
+            validate: function (input) {
+                if (isNaN(parseFloat(input)) === false && parseFloat(input) > 0.0) {
+                    return true;
+                }
+                console.log("\nPlease enter a valid price greater than zero.");
+                return false;
+            }
+        },
+        {
+            type: "input",
+            name: "quantity",
+            message: "How many do you want to initially order?",
+            validate: function (input) {
+                // Make sure the value parses to an integer and is greater than zero
+                if (isNaN(parseInt(input)) === false && parseInt(input) > 0) {
+                    return true
+                }
+                console.log("\nPlease enter a valid number greater than zero.");
+                return false;
+            }
+        }
+    ]).then(answer => {
+        let queryParams = [answer.name, answer.department, parseFloat( answer.price ), parseInt( answer.quantity )];
+
+        let thisQuery = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES (?, ?, ?, ?)";
+
+        console.log( queryParams[3] + " unit(s) of " + queryParams[0] + " have been added to the "
+                    + queryParams[1] + " department at a price of $" + queryParams[2] + " each.");
+        connection.query(thisQuery, queryParams, (error) => {
+            if (error) throw error;
+            manageSomethingElse();
+        });
     });
 };
