@@ -26,13 +26,13 @@ function displayProducts() {
         console.log("Available products:");
         // Display all of the products currently in stock (i.e., stock > 0)
         results.forEach(result => {
-                console.log(
-                    "Item ID: " + result.item_id +
-                    " | Product: " + result.product_name +
-                    " | Dept: " + result.department_name +
-                    " | $" + result.price +
-                    " | " + result.stock_quantity + " in stock");
-            });
+            console.log(
+                "Item ID: " + result.item_id +
+                " | Product: " + result.product_name +
+                " | Dept: " + result.department_name +
+                " | $" + result.price +
+                " | " + result.stock_quantity + " in stock");
+        });
         console.log("\n");
     });
     // Prompt the user for a purchase
@@ -42,24 +42,30 @@ function displayProducts() {
 // Function to prompt the user for a purchase
 function promptPurchase() {
     // Store the query as a string for easy updating later
-    let thisQuery = "SELECT * FROM products";
-    // !: Need to do inquirer within the connection.query() or it'll run before the query finishes
+    let thisQuery = "SELECT * FROM products WHERE stock_quantity > 0";
     connection.query(thisQuery, function (error, results) {
+
+        // Create the list of choices for the Inquirer prompt
+        let currentInventory = results.map(result => {
+            return {
+                name: "Item ID: " + result.item_id +
+                    " | Product: " + result.product_name +
+                    " | Dept: " + result.department_name +
+                    " | $" + result.price +
+                    " | " + result.stock_quantity + " in stock",
+                value: result.item_id,
+                short: result.product_name,
+            };
+        });
+
         // Prompt the user for the product ID and quantity
         inquirer.prompt([
-            // TODO: Make the user select from a list. Input validation is for losers.
-            // TODO: ORRRRRR map an array of item_id from results and validate on that in the question prompt
             {
-                type: "input",
+                type: "list",
                 name: "productID",
-                message: "Enter the product ID for what you'd like to buy:",
-                validate: function( input ){
-                    if (input > 0 && input !== "") {
-                        return true;
-                    }
-                    console.log("\nPlease enter a valid product ID");
-                    return false;
-                }
+                message: "Select the item you'd like to purchase.",
+                choices: currentInventory,
+                pageSize: 10
             },
             {
                 type: "input",
@@ -76,7 +82,7 @@ function promptPurchase() {
                         thisIndex = i;
                     }
                 };
-                // If the user entered an invalid product ID
+                // If the user entered a quantity greater than what's in stock
                 if (answers.productQuantity > results[thisIndex].stock_quantity) {
                     console.log("We're sorry, we are short " + (answers.productQuantity - results[thisIndex].stock_quantity) + " unit(s) to fulfill your purchase.\n");
                     // Ask the user if they want to buy anything else
@@ -111,13 +117,13 @@ function buySomethingElse(){
             message: "Would you like to buy something else?"
         }
     )
-    .then( answer => {
-        if(answer.confirm){
-            displayProducts();
-        }
-        else{
-            console.log("Thanks for shopping!");
-            connection.end();
-        }
-    })
+        .then( answer => {
+            if (answer.confirm) {
+                displayProducts();
+            }
+            else {
+                console.log("Thanks for shopping!");
+                connection.end();
+            }
+        })
 }

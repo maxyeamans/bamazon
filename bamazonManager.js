@@ -139,7 +139,7 @@ function addInventory() {
 
         // Quits out of this function if there's no low inventory items.
         else if (results.length === 0) {
-            console.log("No low inventory. What's wrong with your sales?\n");
+            console.log("No low inventory. Are you actually selling anything?\n");
             displayManagerMenu();
         }
 
