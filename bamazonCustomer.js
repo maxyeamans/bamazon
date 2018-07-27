@@ -70,7 +70,15 @@ function promptPurchase() {
             {
                 type: "input",
                 name: "productQuantity",
-                message: "How many do you want?"
+                message: "How many do you want?",
+                validate: function (input) {
+                    // Make sure the value parses to an integer and is greater than zero
+                    if (isNaN(parseInt(input)) === false && parseInt(input) > 0) {
+                        return true
+                    }
+                    console.log("\nPlease enter a valid number greater than zero.");
+                    return false;
+                }
             }])
             // Booya, another arrow function!
             .then(answers => {
@@ -100,7 +108,7 @@ function promptPurchase() {
                     updateParams = [newQuantity, results[thisIndex].item_id]
                     // We're not doing anything with the results of the SQL query, so the anonymous function only gets one arg.
                     connection.query(updateQuery, [newQuantity, answers.productID], function (error) {
-                        console.log("Great! Your purchase comes out to $" + totalPrice + ".\n");
+                        console.log("Great! Your purchase comes out to $" + totalPrice.toFixed(2) + ".\n");
                         // Ask the user if they want to buy anything else
                         buySomethingElse();
                     });
