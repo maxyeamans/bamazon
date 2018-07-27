@@ -2,11 +2,11 @@
 
 ## What is Bamazon?
 Bamazon is a CLI-only app for selling and managing products.
--Customers can easily make purchases from a list of in-stock products.
--Managers can view all products that Bamazon sells, view low inventory, re-stock their low inventory, and even add new products.
+- Customers can easily make purchases from a list of in-stock products.
+- Managers can view all products that Bamazon sells, view low inventory, re-stock their low inventory, and even add new products.
 
 ## What technologies are used?
-The main technologies used for Bamazon are a MySQL database to keep track of products and Node for the CLI interface. The mysql npm package is used for make queries to the database, and the inquirer npm package.
+The main technologies used for Bamazon are a MySQL database to keep track of products and Node for the CLI interface. The mysql npm package is used for making queries to the database, and the inquirer npm package is used for user prompts.
 
 ## How do I set this up?
 First, you'll need to have a MySQL server set up with the following settings:
@@ -45,9 +45,9 @@ INSERT INTO products (product_name, department_name, price, stock_quantity) VALU
 INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ("Logan [Digital Download]", "Video", 18.99, 12);
 INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES ("Star Wars: The Empire Strikes Back [BLU-RAY]", "Video", 19.99, 10);
 ```
-(Don't worry, the query is saved in the git repo)
+(This query is saved in the git repo.)
 
-Assuming you cloned the full repo, you should be able to run both .js files by opening git bash in the cloned directory and typing `node bamazonCustomer.js` or `node bamazonManager.js`
+Assuming you cloned the full repo, you should be able to run both .js files by opening git bash in the cloned directory and typing `node bamazonCustomer.js` or `node bamazonManager.js`. You may need to do an `npm i` to install dependencies.
 
 ## How do I use Bamazon?
 
