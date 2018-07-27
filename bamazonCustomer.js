@@ -1,8 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 
-const separator = "\n===============\n";
-
 // Specify database connection
 const connection = mysql.createConnection({
     host: "localhost",
@@ -26,10 +24,8 @@ function displayProducts() {
     // Run the query
     connection.query(thisQuery, function (error, results) {
         console.log("Available products:");
-        // filter results to only show product in stock, then display it with a map method
-        results
-            // .filter(result => result.stock_quantity > 0)
-            .map(result => {
+        // Display all of the products currently in stock (i.e., stock > 0)
+        results.forEach(result => {
                 console.log(
                     "Item ID: " + result.item_id +
                     " | Product: " + result.product_name +
@@ -56,7 +52,14 @@ function promptPurchase() {
             {
                 type: "input",
                 name: "productID",
-                message: "Enter the product ID for what you'd like to buy:"
+                message: "Enter the product ID for what you'd like to buy:",
+                validate: function( input ){
+                    if (input > 0 && input !== "") {
+                        return true;
+                    }
+                    console.log("\nPlease enter a valid product ID");
+                    return false;
+                }
             },
             {
                 type: "input",
@@ -74,13 +77,7 @@ function promptPurchase() {
                     }
                 };
                 // If the user entered an invalid product ID
-                if (thisIndex == "" || answers.productQuantity < 1) {
-                    console.log("We're sorry, you entered an invalid product ID or quantity.\n");
-                    // Ask the user if they want to buy anything else
-                    buySomethingElse();
-                }
-                // Else if the user enter a higher quantity than what's available
-                else if (answers.productQuantity > results[thisIndex].stock_quantity) {
+                if (answers.productQuantity > results[thisIndex].stock_quantity) {
                     console.log("We're sorry, we are short " + (answers.productQuantity - results[thisIndex].stock_quantity) + " unit(s) to fulfill your purchase.\n");
                     // Ask the user if they want to buy anything else
                     buySomethingElse();
