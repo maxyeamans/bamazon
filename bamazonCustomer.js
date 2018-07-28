@@ -14,30 +14,8 @@ const connection = mysql.createConnection({
 // Connect to database and begin app by displaying products
 connection.connect(function (err) {
     if (err) throw err;
-    displayProducts();
-});
-
-// Function that displays all items for sale and their details, then prompts for purchase
-function displayProducts() {
-    // Hold the query as a string for easy changing later
-    let thisQuery = "SELECT * FROM products WHERE stock_quantity > 0";
-    // Run the query
-    connection.query(thisQuery, function (error, results) {
-        console.log("Available products:");
-        // Display all of the products currently in stock (i.e., stock > 0)
-        results.forEach(result => {
-            console.log(
-                "Item ID: " + result.item_id +
-                " | Product: " + result.product_name +
-                " | Dept: " + result.department_name +
-                " | $" + result.price +
-                " | " + result.stock_quantity + " in stock");
-        });
-        console.log("\n");
-    });
-    // Prompt the user for a purchase
     promptPurchase();
-};
+});
 
 // Function to prompt the user for a purchase
 function promptPurchase() {
@@ -108,7 +86,8 @@ function promptPurchase() {
                     updateParams = [newQuantity, results[thisIndex].item_id]
                     // We're not doing anything with the results of the SQL query, so the anonymous function only gets one arg.
                     connection.query(updateQuery, [newQuantity, answers.productID], function (error) {
-                        console.log("Great! Your purchase comes out to $" + totalPrice.toFixed(2) + ".\n");
+                        console.log("Great! Your purchase of " + answers.productQuantity + " units of " + results[thisIndex].product_name 
+                                    + " comes out to $" + totalPrice.toFixed(2) + ".\n");
                         // Ask the user if they want to buy anything else
                         buySomethingElse();
                     });
@@ -127,7 +106,7 @@ function buySomethingElse(){
     )
         .then( answer => {
             if (answer.confirm) {
-                displayProducts();
+                promptPurchase();
             }
             else {
                 console.log("Thanks for shopping!");
