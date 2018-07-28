@@ -5,6 +5,8 @@ Bamazon is a CLI-only app for selling and managing products.
 - Customers can easily make purchases from a list of in-stock products.
 - Managers can view all products that Bamazon sells, view low inventory, re-stock their low inventory, and even add new products.
 
+To see a visual breakdown of how the app works, check out the video demonstration here: https://youtu.be/aK65GyNy9wA
+
 ## What technologies are used?
 The main technologies used for Bamazon are a MySQL database to keep track of products and Node for the CLI interface. The mysql npm package is used for making queries to the database, and the inquirer npm package is used for user prompts.
 
