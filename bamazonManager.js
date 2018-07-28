@@ -1,13 +1,3 @@
-// * List a set of menu options:
-//     * View Products for Sale
-//     * View Low Inventory
-//     * Add to Inventory
-//     * Add New Product
-//   * If a manager selects `View Products for Sale`, the app should list every available item: the item IDs, names, prices, and quantities.
-//   * If a manager selects `View Low Inventory`, then it should list all items with an inventory count lower than five.
-//   * If a manager selects `Add to Inventory`, your app should display a prompt that will let the manager "add more" of any item currently in the store.
-//   * If a manager selects `Add New Product`, it should allow the manager to add a completely new product to the store.
-
 const inquirer = require("inquirer");
 const mysql = require("mysql");
 
@@ -48,7 +38,7 @@ function displayManagerMenu() {
             message: "Select a Manager function:"
         }
     ]).then(answer => {
-        // Switch statement to call other functions (eventually) based on user input
+        // Switch statement to call other functions based on user input
         switch (answer.mgrChoice) {
             case "viewProducts":
                 console.log("\nAll Available Products:\n");
@@ -77,11 +67,13 @@ function displayManagerMenu() {
 
 // Display all of the available products for purchase
 function viewProducts() {
+    // Set query in a variable for easy updating later
     let thisQuery = "SELECT product_name, department_name, price, stock_quantity FROM products";
+    // Do stuff with the query
     connection.query(thisQuery, (error, results) => {
         if (error) throw error;
         // Iterate through results with map
-        results.map(result => {
+        results.forEach(result => {
             // Appends (LOW INVENTORY) to any low inventory items
             if (result.stock_quantity < 6) {
                 result.stock_quantity += " (LOW INVENTORY)";
@@ -97,35 +89,18 @@ function viewProducts() {
     });
 };
 
-// Quit out of the app if the user says they're all done
-function manageSomethingElse() {
-    inquirer.prompt({
-        type: "confirm",
-        name: "confirm",
-        message: "Go back to the Manager menu?"
-    }).then(answer => {
-        if (answer.confirm) {
-            displayManagerMenu();
-        }
-        else {
-            console.log("Good luck with the manager thing!");
-            connection.end();
-        };
-    });
-};
-
 // Displays all products with less than 6 units in stock
 function viewLowInventory() {
+    // Store the query in a variable for easy updating later
     let thisQuery = "select product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
     connection.query(thisQuery, function (error, results) {
         if (error) throw error;
         // Iterate over results and print to console
-        // ! Would it be better practice to do a forEach on this, since I'm not returning anything from the map function?
-        results.map(result => {
+        results.forEach(result => {
             console.log("Product: " + result.product_name +
-                " | Department: " + result.department_name +
-                " | Price: $" + result.price +
-                " | Quantity: " + result.stock_quantity);
+            " | Department: " + result.department_name +
+            " | Price: $" + result.price +
+            " | Quantity: " + result.stock_quantity);
         });
         manageSomethingElse();
     });
@@ -133,20 +108,20 @@ function viewLowInventory() {
 
 // Allows the user to view low inventory items and add more
 function addInventory() {
+    // Store query in a variable for easy updating later
     let thisQuery = "select item_id, product_name, department_name, price, stock_quantity from products WHERE stock_quantity < 6";
     connection.query(thisQuery, (error, results) => {
         if (error) throw error;
-
         // Quits out of this function if there's no low inventory items.
         else if (results.length === 0) {
             console.log("No low inventory. Are you actually selling anything?\n");
             displayManagerMenu();
         }
-
+        
         else {
             // Map over the results and return an array of objects that will be used as Inquirer prompt choices
-            /* Set this to return an object where
-                name: string concatenating product name and units
+            /* Each result returns an object where
+                name: string concatenating product name and in-stock units
                 value: product id
                 short: the product name */
             let lowItems = results.map(result => {
@@ -157,12 +132,14 @@ function addInventory() {
                 };
             });
             inquirer.prompt([
+                // Choose the low inventory item to re-stock
                 {
                     type: "list",
                     name: "itemID",
                     message: "Which low-inventory item would you like to re-order?",
                     choices: lowItems
                 },
+                // Indicate how many to re-stock
                 {
                     type: "input",
                     name: "quantityToAdd",
@@ -170,7 +147,7 @@ function addInventory() {
                     // Check to make sure the user entered a valid number
                     validate: function (input) {
                         // Make sure the value parses to an integer and is greater than zero
-                        if (isNaN(parseInt(input)) === false && parseInt(input) > 0) {
+                        if ( isNaN( parseInt(input) ) === false && parseInt( input ) > 0) {
                             return true
                         }
                         console.log("\nPlease enter a valid number greater than zero.");
@@ -180,16 +157,18 @@ function addInventory() {
             ).then(answer => {
                 // Variable to store the index of the query result that matches the chosen product to restock
                 let index;
+                // Iterate through the results and find the index matching the chosen product
                 for (let i = 0; i < results.length; i++) {
                     if (results[i].item_id === answer.itemID) {
                         index = i;
+                        // I *think* this breaks out of the for loop when a match is found, saving time
                         break;
                     }
                 };
-
+                
+                // Store the new stock quantity as a variable. Apparently parsing the answer from Inquirer is very important here
                 let updatedQuantity = parseInt(answer.quantityToAdd) + results[index].stock_quantity;
                 let itemIDtoRestock = results[index].item_id;
-                console.log("You said you want to order " + answer.quantityToAdd + " units of " + results[index].product_name + ".");
                 // Update the database with the user-specified number of units
                 connection.query("UPDATE products SET stock_quantity = ? WHERE item_id = ?", [updatedQuantity, itemIDtoRestock], function (error) {
                     console.log("There should now be " + updatedQuantity + " units of " + results[index].product_name + " in inventory.");
@@ -207,7 +186,7 @@ function AddProduct() {
             type: "input",
             name: "name",
             message: "What's the name of the new product?",
-            // Check to make sure the user entered a valid number
+            // Check to make sure the user entered a valid product
             validate: function (input) {
                 if (input !== "") {
                     return true;
@@ -235,6 +214,7 @@ function AddProduct() {
             message: "What is the sell price of this item?",
             // Check to make sure the user entered a valid price
             validate: function (input) {
+                // A valid price parses as a legit float and is greater than zero
                 if (isNaN(parseFloat(input)) === false && parseFloat(input) > 0.0) {
                     return true;
                 }
@@ -246,8 +226,9 @@ function AddProduct() {
             type: "input",
             name: "quantity",
             message: "How many do you want to initially order?",
+            // Check to make sure the user entered a valid number
             validate: function (input) {
-                // Make sure the value parses to an integer and is greater than zero
+                // A valid number parses as an integer and is greater than zero
                 if (isNaN(parseInt(input)) === false && parseInt(input) > 0) {
                     return true
                 }
@@ -256,15 +237,34 @@ function AddProduct() {
             }
         }
     ]).then(answer => {
-        let queryParams = [answer.name, answer.department, parseFloat( answer.price ), parseInt( answer.quantity )];
-
+        // Store the query as a variable for easy updating later
+        // Putting the placeholders in the parentheses IS MANDATORY. I found out the hard way after this kept failing.
         let thisQuery = "INSERT INTO products (product_name, department_name, price, stock_quantity) VALUES (?, ?, ?, ?)";
-
-        console.log( queryParams[3] + " unit(s) of " + queryParams[0] + " have been added to the "
-                    + queryParams[1] + " department at a price of $" + queryParams[2] + " each.");
+        // Query parameters that will be passed in where the question marks are about
+        let queryParams = [answer.name, answer.department, parseFloat( answer.price ), parseInt( answer.quantity )];
         connection.query(thisQuery, queryParams, (error) => {
             if (error) throw error;
+            // Display an update confirmation to the user
+            console.log(queryParams[3] + " unit(s) of " + queryParams[0] + " have been added to the "
+                        + queryParams[1] + " department at a price of $" + queryParams[2] + " each.");
             manageSomethingElse();
         });
+    });
+};
+
+// Quit out of the app if the user says they're all done
+function manageSomethingElse() {
+    inquirer.prompt({
+        type: "confirm",
+        name: "confirm",
+        message: "Go back to the Manager menu?"
+    }).then(answer => {
+        if (answer.confirm) {
+            displayManagerMenu();
+        }
+        else {
+            console.log("Good luck with the manager thing!");
+            connection.end();
+        };
     });
 };
