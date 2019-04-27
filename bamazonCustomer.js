@@ -1,8 +1,6 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 
-const separator = "\n===============\n";
-
 // Specify database connection
 const connection = mysql.createConnection({
     host: "localhost",
@@ -16,52 +14,49 @@ const connection = mysql.createConnection({
 // Connect to database and begin app by displaying products
 connection.connect(function (err) {
     if (err) throw err;
-    displayProducts();
-});
-
-// Function that displays all items for sale and their details, then prompts for purchase
-function displayProducts() {
-    // Hold the query as a string for easy changing later
-    let thisQuery = "SELECT * FROM products WHERE stock_quantity > 0";
-    // Run the query
-    connection.query(thisQuery, function (error, results) {
-        console.log("Available products:");
-        // filter results to only show product in stock, then display it with a map method
-        results
-            // .filter(result => result.stock_quantity > 0)
-            .map(result => {
-                console.log(
-                    "Item ID: " + result.item_id +
-                    " | Product: " + result.product_name +
-                    " | Dept: " + result.department_name +
-                    " | $" + result.price +
-                    " | " + result.stock_quantity + " in stock");
-            });
-        console.log("\n");
-    });
-    // Prompt the user for a purchase
     promptPurchase();
-};
+});
 
 // Function to prompt the user for a purchase
 function promptPurchase() {
     // Store the query as a string for easy updating later
-    let thisQuery = "SELECT * FROM products";
-    // !: Need to do inquirer within the connection.query() or it'll run before the query finishes
+    let thisQuery = "SELECT * FROM products WHERE stock_quantity > 0";
     connection.query(thisQuery, function (error, results) {
+
+        // Create the list of choices for the Inquirer prompt
+        let currentInventory = results.map(result => {
+            return {
+                name: "Item ID: " + result.item_id +
+                    " | Product: " + result.product_name +
+                    " | Dept: " + result.department_name +
+                    " | $" + result.price +
+                    " | " + result.stock_quantity + " in stock",
+                value: result.item_id,
+                short: result.product_name,
+            };
+        });
+
         // Prompt the user for the product ID and quantity
         inquirer.prompt([
-            // TODO: Make the user select from a list. Input validation is for losers.
-            // TODO: ORRRRRR map an array of item_id from results and validate on that in the question prompt
             {
-                type: "input",
+                type: "list",
                 name: "productID",
-                message: "Enter the product ID for what you'd like to buy:"
+                message: "Select the item you'd like to purchase.",
+                choices: currentInventory,
+                pageSize: 10
             },
             {
                 type: "input",
                 name: "productQuantity",
-                message: "How many do you want?"
+                message: "How many do you want?",
+                validate: function (input) {
+                    // Make sure the value parses to an integer and is greater than zero
+                    if (isNaN(parseInt(input)) === false && parseInt(input) > 0) {
+                        return true
+                    }
+                    console.log("\nPlease enter a valid number greater than zero.");
+                    return false;
+                }
             }])
             // Booya, another arrow function!
             .then(answers => {
@@ -73,14 +68,8 @@ function promptPurchase() {
                         thisIndex = i;
                     }
                 };
-                // If the user entered an invalid product ID
-                if (thisIndex == "" || answers.productQuantity < 1) {
-                    console.log("We're sorry, you entered an invalid product ID or quantity.\n");
-                    // Ask the user if they want to buy anything else
-                    buySomethingElse();
-                }
-                // Else if the user enter a higher quantity than what's available
-                else if (answers.productQuantity > results[thisIndex].stock_quantity) {
+                // If the user entered a quantity greater than what's in stock
+                if (answers.productQuantity > results[thisIndex].stock_quantity) {
                     console.log("We're sorry, we are short " + (answers.productQuantity - results[thisIndex].stock_quantity) + " unit(s) to fulfill your purchase.\n");
                     // Ask the user if they want to buy anything else
                     buySomethingElse();
@@ -97,7 +86,8 @@ function promptPurchase() {
                     updateParams = [newQuantity, results[thisIndex].item_id]
                     // We're not doing anything with the results of the SQL query, so the anonymous function only gets one arg.
                     connection.query(updateQuery, [newQuantity, answers.productID], function (error) {
-                        console.log("Great! Your purchase comes out to $" + totalPrice + ".\n");
+                        console.log("Great! Your purchase of " + answers.productQuantity + " units of " + results[thisIndex].product_name 
+                                    + " comes out to $" + totalPrice.toFixed(2) + ".\n");
                         // Ask the user if they want to buy anything else
                         buySomethingElse();
                     });
@@ -114,13 +104,13 @@ function buySomethingElse(){
             message: "Would you like to buy something else?"
         }
     )
-    .then( answer => {
-        if(answer.confirm){
-            displayProducts();
-        }
-        else{
-            console.log("Thanks for shopping!");
-            connection.end();
-        }
-    })
+        .then( answer => {
+            if (answer.confirm) {
+                promptPurchase();
+            }
+            else {
+                console.log("Thanks for shopping!");
+                connection.end();
+            }
+        })
 }
