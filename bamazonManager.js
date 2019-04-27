@@ -190,7 +190,13 @@ function addInventory() {
                 let itemIDtoRestock = results[index].item_id;
                 console.log("You said you want to order " + answer.quantityToAdd + " units of " + results[index].product_name + ".");
                 // Update the database with the user-specified number of units
-                connection.query("UPDATE products SET stock_quantity = ? WHERE item_id = ?", [updatedQuantity, itemIDtoRestock], function (error) {
+                connection.query("UPDATE products SET ? WHERE ?",
+                [
+                    {stock_quantity: updatedQuantity},
+                    {item_id: itemIDtoRestock}
+                ],
+                 function (error) {
+                // connection.query("UPDATE products SET stock_quantity = ? WHERE item_id = ?", [updatedQuantity, itemIDtoRestock], function (error) {
                     console.log("There should now be " + updatedQuantity + " units of " + results[index].product_name + " in inventory.");
                     displayManagerMenu();
                 });
